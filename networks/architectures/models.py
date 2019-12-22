@@ -21,6 +21,15 @@ class UNet(nn.Module):
 		if(dec_type == 'unet'):
 			self.decoder = UNetDecoder(opt, nf)
 
+	def get_params(self):
+		p1 = list(self.decoder.parameters())
+		p2 = list(self.encoder.blk5.parameters())
+		p3 = list(self.encoder.blk4.parameters()) + \
+			 list(self.encoder.blk3.parameters())
+		p4 = list(self.encoder.blk2.parameters()) + \
+			 list(self.encoder.blk1.parameters())
+		return [p1, p2, p3, p4]
+
 	def forward(self, x):
 		out = self.encoder(x)
 		out = self.decoder(out)
@@ -37,6 +46,16 @@ class PSPNet(nn.Module):
 
 		if(dec_type == 'pspnet'):
 			self.decoder = PSPNetDecoder(opt, nf)
+
+	def get_params(self):
+		p1 = list(self.decoder.parameters())
+		p2 = list(self.encoder.layer4.parameters())
+		p3 = list(self.encoder.layer2.parameters()) + \
+			 list(self.encoder.layer3.parameters())
+		p4 = list(self.encoder.conv.parameters()) + \
+			 list(self.encoder.bn.parameters()) + \
+			 list(self.encoder.layer1.parameters())
+		return [p1, p2, p3, p4]
 
 	def forward(self, x):
 		out = self.encoder(x)
@@ -58,6 +77,16 @@ class DANet(nn.Module):
 
 		if(dec_type == 'danet'):
 			self.decoder = DANetDecoder(opt, nf)
+
+	def get_params(self):
+		p1 = list(self.decoder.parameters())
+		p2 = list(self.encoder.layer4.parameters())
+		p3 = list(self.encoder.layer2.parameters()) + \
+			 list(self.encoder.layer3.parameters())
+		p4 = list(self.encoder.conv.parameters()) + \
+			 list(self.encoder.bn.parameters()) + \
+			 list(self.encoder.layer1.parameters())
+		return [p1, p2, p3, p4]
 
 	def forward(self, x):
 		out = self.encoder(x)

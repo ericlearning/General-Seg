@@ -21,18 +21,30 @@ class Segmentation_Network(nn.Module):
 
 	def initialize_optimizers(self, iter_num):
 		lr, beta1, beta2 = self.opt.lr, self.opt.beta1, self.opt.beta2
-		model_params = list(self.M.parameters())
+		backbone_mode, lr_division = self.opt.backbone_mode, self.opt.lr_division
+		model_params = self.M.get_params()
 
-		opt = optim.Adam(model_params, lr = lr, betas = (beta1, beta2))
+		if(backbone_mode == 'freeze'):
+			freeze(sum(model_params[1:], []))
+			opt = optim.Adam(model_params[0], lr = lr, betas = (beta1, beta2))
+		elif(backbone_mode == 'equal'):
+			opt = optim.Adam(sum(model_params, []), lr = lr, betas = (beta1, beta2))
+		elif(backbone_mode == 'discriminative'):
+			opt = optim.Adam([
+				{'params': model_params[0], 'lr': lr / lr_division[0]},
+				{'params': model_params[1], 'lr': lr / lr_division[1]},
+				{'params': model_params[2], 'lr': lr / lr_division[2]},
+				{'params': model_params[3], 'lr': lr / lr_division[3]}
+			], betas = (beta1, beta2))
+
 		opt = LinearDecay(self.opt, opt, iter_num)
-
 		return opt
 
 	def forward(self, inputs):
 		x, y = inputs
 		y_fake = self.generate(x)
 		err = self.CELoss(y_fake, y)
-		return err
+		return err, y_fake
 		
 	def generate(self, x):
 		return self.M(x)

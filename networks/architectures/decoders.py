@@ -117,7 +117,7 @@ class CAM(nn.Module):
 class DANetDecoder(nn.Module):
 	def __init__(self, opt, nf):
 		super(DANetDecoder, self).__init__()
-		ic, oc, norm_type, act_type, mode = \
+		ic, oc, norm_type, act_type, mode  = \
 			opt.ic, opt.oc, opt.norm_type, opt.act_type, opt.dec_mode
 		self.PAM_branch = nn.Sequential(
 			nn.Conv2d(nf, nf//4, 3, 1, 1),
@@ -136,18 +136,21 @@ class DANetDecoder(nn.Module):
 
 		self.PAM_aux = nn.Conv2d(nf//4, oc, 1, 1, 0)
 		self.CAM_aux = nn.Conv2d(nf//4, oc, 1, 1, 0)
-		self.final = nn.Conv2d(nf//4, oc, 1, 1, 0)
+		self.up_p_aux = UpSample('BI', m = 8)
+		self.up_c_aux = UpSample('BI', m = 8)
 
-		self.upsample_p_aux = Upsample('BI', m=8)
-		self.upsample_c_aux = Upsample('BI', m=8)
-		if(dec_mode == 'fullres'):
+		if(mode == 'fullres'):
+			self.final = nn.Conv2d(nf//4, nf//4, 3, 1, 1)
 			self.upsample = nn.Sequential(
-				UpSample('BI'), UNetBlk(nf//4, nf//4, norm_type, act_type, bias),
-				UpSample('BI'), UNetBlk(nf//4, nf//8, norm_type, act_type, bias),
-				UpSample('BI'), UNetBlk(nf//8, nf//16, norm_type, act_type, bias),
+				UpSample('BI'), UNetBlk(nf//4, nf//4, norm_type, act_type, False),
+				UpSample('BI'), UNetBlk(nf//4, nf//8, norm_type, act_type, False),
+				UpSample('BI'), UNetBlk(nf//8, nf//16, norm_type, act_type, False),
+				nn.Conv2d(nf//16, oc, 1, 1, 0)
 			)
+
 		else:
-			self.upsample = Upsample('BI', m=8)
+			self.final = nn.Conv2d(nf//4, oc, 1, 1, 0)
+			self.upsample = UpSample('BI', m=8)
 
 
 	def forward(self, x):
@@ -156,4 +159,6 @@ class DANetDecoder(nn.Module):
 		c = self.CAM_branch(x[-1])
 		c_aux = self.CAM_aux(c)
 		out = self.final(p + c)
+
+		p_aux, c_aux, out = self.up_p_aux(p_aux), self.up_c_aux(c_aux), self.upsample(out)
 		return p_aux, c_aux, out

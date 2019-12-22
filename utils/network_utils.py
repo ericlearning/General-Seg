@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.autograd as autograd
-import torchvision.transforms as transforms
 import torch.nn.functional as F
 import numpy as np
 from PIL import Image
+from albumentations import *
+from utils.transformations import *
 
 def get_norm(norm_type, size):
 	if(norm_type == 'batchnorm'):
@@ -30,7 +31,7 @@ def get_activation(activation_type):
 	elif(activation_type == None):
 		return Nothing()
 
-def get_transformations(opt):
+def get_transformations_old(opt):
 	h, w, ic, oc = opt.height, opt.width, opt.ic, opt.oc
 	dt_train = {
 		'input' : transforms.Compose([
@@ -56,20 +57,26 @@ def get_transformations(opt):
 	}
 	return dt_train, dt_val
 
-class LabelToTensor(object):
-	def __init__(self):
-		pass
-
-	def __call__(self, x):
-		return torch.LongTensor(np.array(x))
-
-class Denormalize(object):
-	def __init__(self, mean, var):
-		self.mean = np.array(mean).reshape(3, 1, 1)
-		self.var = np.array(var).reshape(3, 1, 1)
-
-	def __call__(self, x):
-		return x * self.var + self.mean
+def get_transformations(opt):
+	h, w, ic, oc = opt.height, opt.width, opt.ic, opt.oc
+	dt_train = Compose([
+		HorizontalFlip(),
+		OneOf([
+			GridDistortion(distort_limit=0.2),
+			ElasticTransform(),
+			OpticalDistortion(distort_limit=0.5, shift_limit=0.4)
+		], p=0.3),
+		CLAHE(p=0.3),
+		RandomBrightnessContrast(0.1, 0.1),
+		RandomGamma(),
+		HueSaturationValue(),
+		ShiftScaleRotate(rotate_limit=15),
+		Resize(256, 256),
+	])
+	dt_val = Compose([
+		Resize(256, 256),
+	])
+	return dt_train, dt_val
 
 def get_nf(net_type):
 	nf = {
@@ -135,3 +142,26 @@ def split(x, num):
 	else:
 		return [x]
 
+def IOU(y, y_fake, n_classes, ignore_index):
+	per_class_iou = []
+	cnt = 0
+	y_fake = y_fake.argmax(dim = 1)
+	for i in range(n_classes):
+		if(i == ignore_index):
+			continue
+		cnt += 1
+		class_in_y_fake = (y_fake == i)
+		class_in_y = (y == i)
+		intersection = (class_in_y_fake & class_in_y).sum()
+		union = (class_in_y_fake | class_in_y).sum()
+		iou = 1 if(union == 0) else float(intersection) / float(union)
+		per_class_iou.append(iou)
+	mean_iou = sum(per_class_iou) / cnt
+	return mean_iou, per_class_iou
+
+def freeze(parameters):
+	for param in parameters:
+		param.requires_grad = False
+
+def str2list(s):
+	return list(map(float, s.split(',')))

@@ -63,7 +63,8 @@ class UpSample(nn.Module):
 	def __init__(self, ds_type = 'TC', ic = None, m = 2):
 		super(UpSample, self).__init__()
 		self.ds_type, self.m = ds_type, m
-		self.blk = nn.ConvTranspose2d(ic, ic, 2, 2, 0)
+		if(ic is not None):
+			self.blk = nn.ConvTranspose2d(ic, ic, 2, 2, 0)
 
 	def forward(self, x):
 		if(self.ds_type == 'BI'):

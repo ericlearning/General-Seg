@@ -1,4 +1,5 @@
 import argparse
+from utils.network_utils import str2list
 
 def options():
 	p = argparse.ArgumentParser(description = 'Arguments for image2image-translation training.')
@@ -9,10 +10,14 @@ def options():
 	p.add_argument('--lr', type = float, help = 'learning rate', default = 0.003)
 	p.add_argument('--beta1', type = float, help = 'beta1 parameter for the Adam optimizer', default = 0.9)
 	p.add_argument('--beta2', type = float, help = 'beta2 parameter for the Adam optimizer', default = 0.99)
+
 	p.add_argument('--ic', type = int, help = 'input channel num', default = 3)
 	p.add_argument('--oc', type = int, help = 'output channel num', default = 20)
 	p.add_argument('--height', type = int, help = 'image height (2^n)', default = 256)
 	p.add_argument('--width', type = int, help = 'image width (2^n)', default = 256)
+
+	p.add_argument('--backbone-mode', type = str2list, help = '(freeze/equal/discriminative)', default = 'freeze')
+	p.add_argument('--lr-division', help = 'lr division value, only in discriminative mode. requires 4 values.', default = '1, 4, 16, 64')
 
 	p.add_argument('--norm-type', help = 'normalization type', default = 'batchnorm')
 	p.add_argument('--act-type', help = 'activation type', default = 'relu')

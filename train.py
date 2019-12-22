@@ -18,11 +18,13 @@ trainer = Segmentation_Trainer(opt, iter_num)
 save_cnt = 0
 for epoch in range(opt.epoch):
 	for i, data in enumerate(tqdm(trn_dl)):
-		err = trainer.step(data)
+		err_train = trainer.step(data)
 
 		if(i % opt.print_freq == 0):
-			print('[%d/%d] [%d/%d] err : %.4f'
-				  %(epoch+1, opt.epoch, i+1, len(trn_dl), float(err)))
+			err_val, metric_val = trainer.evaluate(val_dl)
+			print('[%d/%d] [%d/%d] err_train : %.4f, err_val : %.4f, IOU_val : %.4f'
+				  %(epoch+1, opt.epoch, i+1, len(trn_dl), float(err_train), float(err_val), float(metric_val)))
+			trainer.network.train()
 
 		if(i % opt.vis_freq == 0):
 			sample_images_list = get_sample_images_list(trainer, val_dl, n_classes)

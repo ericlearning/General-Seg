@@ -10,15 +10,30 @@ class Segmentation_Trainer():
 		if(opt.multigpu):
 			self.network.M = CustomDataParallel(self.network.M)
 		self.opt = self.network.initialize_optimizers(iter_num)
+		self.n_classes = opt.oc
+		self.ignore_index = opt.ignore_index
 		self.grad_acc = opt.grad_acc
 
-	def preprocess_input(self, inputs):
+	def preprocess_input(self, inputs, split_num):
 		x, y = inputs[0].to(self.device), inputs[1].to(self.device)
-		x, y = split(x, self.grad_acc), split(y, self.grad_acc)
+		x, y = split(x, split_num), split(y, split_num)
 		return x, y
 
+	def evaluate(self, val_dl):
+		self.network.eval()
+		err_total, metric_total = 0, 0
+		for data in val_dl:
+			x, y = self.preprocess_input(data, 1)
+			with torch.no_grad():
+				err, y_fake = self.network((x[0], y[0]))
+				metric, _ = IOU(y[0], y_fake[0], self.n_classes, self.ignore_index)
+				err_total += err
+				metric_total += metric
+		return err_total / len(val_dl), metric_total / len(val_dl)
+
 	def step(self, inputs):
-		x, y = self.preprocess_input(inputs)
+		self.network.train()
+		x, y = self.preprocess_input(inputs, self.grad_acc)
 		err = self.M_one_step((x, y))
 		return err
 
@@ -26,7 +41,8 @@ class Segmentation_Trainer():
 		x, y = inputs
 		self.network.M.zero_grad()
 		for x_, y_ in zip(x, y):
-			err = self.network((x_, y_)) / self.grad_acc
+			err, _ = self.network((x_, y_))
+			err /= self.grad_acc
 			err.backward()
 		self.opt.step()
 		return err
