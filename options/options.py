@@ -1,11 +1,14 @@
 import argparse
-from utils.network_utils import str2list
+from utils.network_utils import str2list, str2list_2
 
 def options():
 	p = argparse.ArgumentParser(description = 'Arguments for image2image-translation training.')
-	p.add_argument('--decay-start-epoch', type = int, help = 'what epoch will the learning rate decay start', default = -1)
-
-	p.add_argument('--epoch', type = int, help = 'epoch num', default = 200)
+	p.add_argument('--epoch', type = str2list_2, \
+							  help = 'epoch num. writing a single number will give you a normal schedule. ' \
+									 'int: normal schedule, (int/int): linear decay, ' \
+									 'int, int, int: CosineAnnealingLR, each cycle_num, cycle_len, cycle_mult. ' \
+									 'int, int, float: CyclicLR, each cycle_num, epoch_num, div', \
+									 default = '200')
 	p.add_argument('--bs', type = int, help = 'batch size', default = 4)
 	p.add_argument('--lr', type = float, help = 'learning rate', default = 0.003)
 	p.add_argument('--beta1', type = float, help = 'beta1 parameter for the Adam optimizer', default = 0.9)
@@ -16,8 +19,8 @@ def options():
 	p.add_argument('--height', type = int, help = 'image height (2^n)', default = 256)
 	p.add_argument('--width', type = int, help = 'image width (2^n)', default = 256)
 
-	p.add_argument('--backbone-mode', type = str2list, help = '(freeze/equal/discriminative)', default = 'freeze')
-	p.add_argument('--lr-division', help = 'lr division value, only in discriminative mode. requires 4 values.', default = '1, 4, 16, 64')
+	p.add_argument('--backbone-mode', help = '(freeze/equal/discriminative)', default = 'freeze')
+	p.add_argument('--lr-division', type = str2list, help = 'lr division value, only in discriminative mode. requires 4 values.', default = '1, 4, 16, 64')
 
 	p.add_argument('--norm-type', help = 'normalization type', default = 'batchnorm')
 	p.add_argument('--act-type', help = 'activation type', default = 'relu')

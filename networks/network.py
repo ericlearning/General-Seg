@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from utils.network_utils import *
-from scheduler.scheduler import LinearDecay
+from scheduler.scheduler import *
 from networks.architectures.models import *
 from loss.loss import *
 
@@ -37,7 +37,13 @@ class Segmentation_Network(nn.Module):
 				{'params': model_params[3], 'lr': lr / lr_division[3]}
 			], betas = (beta1, beta2))
 
-		opt = LinearDecay(self.opt, opt, iter_num)
+		scheduler_type = self.opt.epoch[-1]
+		scheduler_list = {
+			'normal': Normal, 'decay': LinearDecay, 
+			'cosine_annealing': CosineAnnealingLR, 
+			'clr': CyclicLR
+		}
+		opt = scheduler_list[scheduler_type](self.opt, opt, iter_num)
 		return opt
 
 	def forward(self, inputs):

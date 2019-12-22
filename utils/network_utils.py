@@ -165,3 +165,30 @@ def freeze(parameters):
 
 def str2list(s):
 	return list(map(float, s.split(',')))
+
+def str2list_2(s):
+	s = s.split(',')
+	len_s = len(s)
+	if(len_s == 1):
+		epoch_num = int(s[0])
+		return (epoch_num, 'normal')
+	elif(len_s == 2):
+		epoch_num, decay_start_epoch = int(s[0]), int(s[1])
+		return (epoch_num, decay_start_epoch, 'decay')
+	elif(len_s == 3):
+		if('.' not in s[2]):
+			cycle_num, cycle_len, cycle_mult = int(s[0]), int(s[1]), int(s[2])
+			return (cycle_num, cycle_len, cycle_mult, 'cosine_annealing')
+		else:
+			cycle_num, epoch_num, div = int(s[0]), int(s[1]), float(s[2])
+			return (cycle_num, epoch_num, div, 'clr')
+
+def get_total_epoch(s):
+	schedule_type = s[-1]
+	if(schedule_type == 'normal' or schedule_type == 'decay'):
+		return s[0]
+	elif(schedule_type == 'cosine_annealing'):
+		return s[1] * (s[2] ** s[0] - 1) // (s[2] - 1)
+	elif(schedule_type == 'clr'):
+		return s[0] * s[1]
+

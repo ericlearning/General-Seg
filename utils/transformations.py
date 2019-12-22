@@ -11,8 +11,6 @@ class LabelToTensor(object):
 		pass
 
 	def __call__(self, x):
-		if(not isinstance(x, np.ndarray)):
-			x = np.array(x)
 		return torch.LongTensor(x)
 
 class Denormalize(object):
